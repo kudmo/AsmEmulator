@@ -7,6 +7,8 @@
 #include <array>
 #include <stdexcept>
 
+using bits_t = std::vector<bool>;
+
 /**
  * @brief A fixed-size binary word template class.
  *
@@ -14,29 +16,48 @@
  *
  * This class represents a binary word of fixed size, stored as a sequence of bits.
  * It provides iterator access, element-wise operations, and size queries.
- * The underlying storage is a std::vector<bool>, but access is constrained to the first `Size` bits.
+ * The underlying storage is a bits_t, but access is constrained to the first `Size` bits.
  */
 template <size_t Size>
 struct Word {
     /// Internal storage for bits
-    std::vector<bool> bits = std::vector<bool>(Size);
+    bits_t bits = bits_t(Size);
     /// Iterator type for mutable bit access
-    using iterator = std::vector<bool>::iterator;
+    using iterator = bits_t::iterator;
     /// Iterator type for read-only bit access
-    using const_iterator = std::vector<bool>::const_iterator;
+    using const_iterator = bits_t::const_iterator;
 
     /**
      * @brief Default constructor.
      * @post Initializes all bits to false (0).
      */
     explicit Word() = default;
-
+    /**
+    * @brief Copy constructor.
+    * @post Copy word value from other.
+    */
+    Word(const Word&) = default;
+    /**
+    * @brief Move constructor.
+    * @post Move word value from other.
+    */
+    Word(Word&&) = default;
+    /**
+    * @brief Copy operator.
+    * @post Copy word value from other.
+    */
+    Word& operator=(const Word&) = default;
+    /**
+    * @brief Move operator.
+    * @post Move word value from other.
+    */
+    Word& operator=(Word&&) = default;
     /**
      * @brief Constructs a Word from a vector of booleans.
      * @param bits Source bits vector.
      * @throws std::invalid_argument if bits.size() not equal to Size
      */
-    explicit Word(const std::vector<bool>& bits) {
+    explicit Word(const bits_t& bits) {
         if (bits.size() != Size)
             throw std::invalid_argument("Word size must be equal to the size of vector");
         std::copy(bits.begin(), bits.end(), bits.begin());
@@ -132,7 +153,7 @@ concept BasicMemory =
  */
 template <size_t WordSize, size_t Capacity>
 struct Memory {
-    /// Address type (64-bit unsigned)
+    /// Address type
     using address_type = uint64_t;
     /// Word type with specified bit-width
     using word_type = Word<WordSize>;
@@ -223,7 +244,7 @@ struct AdvancedMemory : Memory<WordSize, Capacity> {
      * @param word Value to store
      * @throws std::out_of_range For reg >= RegisterCapacity
      */
-    void write_register(address_type reg, word_type word) {
+    void write_register(address_type reg, const word_type& word) {
         if (reg >= RegisterCapacity) throw std::out_of_range("Register write overflow");
         registers[reg] = word;
     }

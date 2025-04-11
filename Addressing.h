@@ -28,6 +28,7 @@ struct AddressingMode {
     }
 };
 
+// !@todo Разобраться с возвратом произвольного количества бит
 /**
  * @brief Immediate addressing mode implementation
  *

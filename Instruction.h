@@ -36,6 +36,7 @@ public:
     static constexpr size_t total_size = CurrentOffset; ///< Total instruction size
 };
 
+// !@todo Посмотреть можно ли как-то более явно ограничить что за Addressing (Концепты, наследование)
 /**
  * @brief Specialization for handling addressing mode fields
  * 
@@ -147,8 +148,7 @@ private:
         constexpr auto addr   = field.second;
         constexpr auto size   = decltype(addr)::size;
 
-        Word<size> result(bits.begin() + offset, bits.begin() + offset + size);
-        return result;
+        return Word<size>(bits.begin() + offset, bits.begin() + offset + size);
     }
 };
 
