@@ -6,4 +6,5 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wno-unused-parameter -std=c++2b -Wall 
 add_executable(AsmEmulator main.cpp
         Addressing.h
         Memory.h
-        Instruction.h)
+        Instruction.h
+        Utils.h)

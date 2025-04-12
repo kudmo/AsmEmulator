@@ -18,6 +18,7 @@ int main() {
     auto mem = AdvancedMemory<4,32,8>();
 
     auto a = Word<Mul::total_size>();
+    RegisterAddressing<3>().read_by_address( Word<3>(),mem);
     Mul::execute(a, mem);
     return 0;
 }

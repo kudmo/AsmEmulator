@@ -46,6 +46,7 @@ public:
  */
 template <size_t CodeVal, size_t CodeSize, size_t CurrentOffset,
           template <size_t> class Addressing, size_t Size, typename... Rest>
+        requires AddressingModeConcept<Addressing<Size>>
 class InstructionImpl<CodeVal, CodeSize, CurrentOffset, Addressing<Size>, Rest...> {
 private:
     using Next = InstructionImpl<CodeVal, CodeSize, CurrentOffset + Size, Rest...>;

@@ -20,15 +20,21 @@ struct AddressingMode {
      * @tparam MemType Memory type satisfying BasicMemory concept
      * @param address Target address/operand
      * @param memory Memory instance to access
-     * @return typename MemType::word_type Resulting data word
+     * @return bits_t Resulting data word
      */
     template <BasicMemory MemType>
-    typename MemType::word_type read_by_address(const address_type& address, MemType& memory) const {
+    bits_t read_by_address(const address_type& address, MemType& memory) const {
         return static_cast<const Derived*>(this)->read_by_address_impl(address, memory);
     }
 };
 
-// !@todo Разобраться с возвратом произвольного количества бит
+template <typename T>
+concept AddressingModeConcept =
+    std::derived_from<T, AddressingMode<T, T::size>> &&
+    requires { typename T::address_type; } &&
+    requires { { T::size } -> std::convertible_to<std::size_t>; }
+;
+
 /**
  * @brief Immediate addressing mode implementation
  *
@@ -39,11 +45,11 @@ struct AddressingMode {
 template <size_t Size>
 struct ImmediateAddressing : public AddressingMode<ImmediateAddressing<Size>, Size> {
     template <BasicMemory MemType>
-    typename MemType::word_type read_by_address_impl(
+    bits_t read_by_address_impl(
         const typename ImmediateAddressing::address_type& address,
         MemType& memory
     ) const {
-        return typename MemType::word_type();
+        return address.bits;
     };
 };
 
@@ -57,11 +63,11 @@ struct ImmediateAddressing : public AddressingMode<ImmediateAddressing<Size>, Si
 template <size_t Size>
 struct RegisterAddressing : public AddressingMode<RegisterAddressing<Size>, Size> {
     template <MemoryWithRegisters MemType>
-    typename MemType::word_type read_by_address_impl(
+    bits_t read_by_address_impl(
         const typename RegisterAddressing::address_type& address,
         MemType& memory
     ) const {
-        return typename MemType::word_type();
+        return {};
     };
 };
 
