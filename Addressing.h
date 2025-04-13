@@ -67,7 +67,27 @@ struct RegisterAddressing : public AddressingMode<RegisterAddressing<Size>, Size
         const typename RegisterAddressing::address_type& address,
         MemType& memory
     ) const {
-        return {};
+        auto addr = decode(address, NumberEncoding::Unsigned);
+        return memory.get_register(addr).bits;
+    };
+};
+
+/**
+ * @brief Direct addressing mode implementation
+ *
+ * @tparam Size Bit-width of memory addresses
+ *
+ * Accesses registers in memory systems
+ */
+template <size_t Size>
+struct DirectAddressing : public AddressingMode<DirectAddressing<Size>, Size> {
+    template <BasicMemory MemType>
+    bits_t read_by_address_impl(
+        const typename DirectAddressing::address_type& address,
+        MemType& memory
+    ) const {
+        auto addr = decode(address, NumberEncoding::Unsigned);
+        return memory.read(addr).bits;
     };
 };
 

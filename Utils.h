@@ -53,22 +53,22 @@ struct Word {
     explicit Word() = default;
     /**
     * @brief Copy constructor.
-    * @post Copy word value from other.
+    * @post Copy word value from the other.
     */
     Word(const Word&) = default;
     /**
     * @brief Move constructor.
-    * @post Move word value from other.
+    * @post Move word value from the other.
     */
     Word(Word&&) = default;
     /**
     * @brief Copy operator.
-    * @post Copy word value from other.
+    * @post Copy word value from the other.
     */
     Word& operator=(const Word&) = default;
     /**
     * @brief Move operator.
-    * @post Move word value from other.
+    * @post Move word value from the other.
     */
     Word& operator=(Word&&) = default;
     /**
@@ -131,13 +131,17 @@ struct Word {
      * @brief Returns a const iterator past the last valid bit (position `Size`).
      */
     const_iterator end() const { return bits.begin() + Size; }
-};
 
+    friend std::ostream& operator<< (std::ostream& out, const Word<Size>& value) {
+        for (auto i : value) out << i;
+        return out;
+    }
+};
 
 enum class NumberEncoding {
     Unsigned,
-    DirectСode,
-    ReverseСode,
+    DirectCode,
+    ReverseCode,
     AdditionCode,
 };
 
@@ -145,16 +149,50 @@ template <BitArray bitarray_t>
 long long int decode(const bitarray_t& bitarray, NumberEncoding encoding) {
     long long int result = 0;
     switch (encoding) {
-        case NumberEncoding::Unsigned:
+        case NumberEncoding::Unsigned: {
             for (auto it = bitarray.begin(); it != bitarray.end(); ++it) {
-                result <<= 1;
-                result += static_cast<size_t>(*it);
+                result = (result << 1) + static_cast<size_t>(*it);
             }
             break;
+        }
+        case NumberEncoding::DirectCode: {
+            const bool is_negative = bitarray[0];
+            for (auto it = bitarray.begin()+1; it != bitarray.end(); ++it) {
+                result = (result << 1) + static_cast<size_t>(*it);
+            }
+            if (is_negative) result *= -1;
+            break;
+        }
+        case NumberEncoding::ReverseCode: {
+            const bool is_negative = bitarray[0];
+
+            for (auto it = bitarray.begin()+1; it != bitarray.end(); ++it) {
+                result = (result << 1) + static_cast<int>(is_negative ? !*it : *it);
+            }
+
+            result = is_negative ? -result : result;
+            break;
+        }
+        case NumberEncoding::AdditionCode: {
+            const bool is_negative = bitarray[0];
+
+            for (auto it = bitarray.begin()+1; it != bitarray.end(); ++it) {
+                result = (result << 1) + static_cast<int>(is_negative ? !*it : *it);
+            }
+
+            if (is_negative) {
+                result += 1;
+                result = -result;
+            }
+            break;
+        }
+        default:
+            throw std::invalid_argument("Invalid encoding value");
     }
 
     return result;
 }
 
+//!@todo Добавить encode
 
 #endif //UTILS_H

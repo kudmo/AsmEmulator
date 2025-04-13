@@ -3,22 +3,17 @@
 #include "Addressing.h"
 #include "Instruction.h"
 
-using Mul = Instruction<
+using Mul = TwoAddressInstruction<
     0x0,2,
     RegisterAddressing<3>,
-    Skip<3>,
-    ImmediateAddressing<5>,
-    ImmediateAddressing<4>,
-    Skip<8>
+    RegisterAddressing<3>
 >;
-
 
 
 int main() {
     auto mem = AdvancedMemory<4,32,8>();
 
-    auto a = Word<Mul::total_size>();
-    RegisterAddressing<3>().read_by_address( Word<3>(),mem);
-    Mul::execute(a, mem);
+    std::vector<bool> cmd = {0,0,0,1,0,1,0,0,0,0};
+
     return 0;
 }

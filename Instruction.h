@@ -16,6 +16,15 @@
 template <size_t N>
 struct Skip {};
 
+template <typename>
+struct is_skip : std::false_type {};
+
+template <size_t N>
+struct is_skip<Skip<N>> : std::true_type {};
+
+template <typename T>
+concept ValidArg = is_skip<T>::value || AddressingModeConcept<T>;
+
 /**
  * @brief Base implementation for instruction decoding
  * 
@@ -24,6 +33,7 @@ struct Skip {};
  * @tparam CurrentOffset Current bit position in instruction word
  */
 template <size_t CodeVal, size_t CodeSize, size_t CurrentOffset, typename... Args>
+requires (ValidArg<Args> && ...)
 class InstructionImpl;
 
 /**
@@ -36,7 +46,6 @@ public:
     static constexpr size_t total_size = CurrentOffset; ///< Total instruction size
 };
 
-// !@todo Посмотреть можно ли как-то более явно ограничить что за Addressing (Концепты, наследование)
 /**
  * @brief Specialization for handling addressing mode fields
  * 
@@ -107,35 +116,7 @@ public:
         static_assert(I < fields_count, "Index out of range");
         return std::get<I>(fields);
     }
-
-    /**
-     * @brief Execute instruction using specified memory
-     * @tparam MemType Memory type satisfying BasicMemory concept
-     * @param word Instruction word to decode
-     * @param memory Memory system to operate on
-     */
-    template <BasicMemory MemType>
-    static void execute(const Word<total_size>& word, MemType& memory) {
-        execute_impl<MemType>(word, memory, std::make_index_sequence<fields_count>{});
-    }
-
-private:
-    /**
-     * @brief Implementation of instruction execution
-     * @tparam MemType Memory type
-     * @tparam Is Index sequence for field processing
-     */
-    template <BasicMemory MemType, size_t... Is>
-    static void execute_impl(const Word<total_size>& bits,
-                             MemType& memory,
-                             std::index_sequence<Is...>)
-    {
-        ( get_field<Is>().second.read_by_address(
-              extract_field<Is>(bits),
-              memory
-          ), ... );
-    }
-
+protected:
     /**
      * @brief Extract field bits from instruction word
      * @tparam I Field index
@@ -150,6 +131,62 @@ private:
         constexpr auto size   = decltype(addr)::size;
 
         return Word<size>(bits.begin() + offset, bits.begin() + offset + size);
+    }
+};
+
+/**
+ * @brief A concept that defines the requirements for the number of arguments
+ *
+ * @tparam Count Required count of addressing modes
+ * @tparam Ts Field components (addressing modes or skips)
+ */
+template <size_t Count, typename... Ts>
+concept AddressingCount = ((0 + ... + (AddressingModeConcept<Ts> ? 1 : 0)) == Count);
+
+/**
+ * @brief One-argument instruction template class
+ *
+ * @tparam CodeVal Numeric opcode value
+ * @tparam CodeSize Opcode size in bits
+ * @tparam Args Field components (addressing modes or skips)
+ */
+template <size_t CodeVal, size_t CodeSize,typename... Args>
+requires AddressingCount<1, Args...>
+class SingleAddressInstruction : public Instruction<CodeVal, CodeSize, Args...>
+{
+    using Base = Instruction<CodeVal, CodeSize, Args...>;
+    static constexpr auto field = Base::template get_field<0>();
+public:
+    template <BasicMemory MemType>
+    static void execute(const Word<Base::total_size>& word, MemType& memory) {
+        auto addr_bit = Base::template extract_field<0>(word);
+        bits_t value_bit = field.second.read_by_address(addr_bit, memory);
+    }
+};
+
+/**
+ * @brief Two-argument instruction template class
+ *
+ * @tparam CodeVal Numeric opcode value
+ * @tparam CodeSize Opcode size in bits
+ * @tparam Args Field components (addressing modes or skips)
+ */
+template <size_t CodeVal, size_t CodeSize,typename... Args>
+requires AddressingCount<2, Args...>
+class TwoAddressInstruction : public Instruction<CodeVal, CodeSize, Args...>
+{
+    using Base = Instruction<CodeVal, CodeSize, Args...>;
+    static constexpr auto field1 = Base::template get_field<0>();
+    static constexpr auto field2 = Base::template get_field<1>();
+
+public:
+    template <BasicMemory MemType>
+    static void execute(const Word<Base::total_size>& word, MemType& memory) {
+        auto addr1_bit = Base::template extract_field<0>(word);
+        auto addr2_bit = Base::template extract_field<1>(word);
+
+        bits_t value1_bit = field1.second.read_by_address(addr1_bit, memory);
+        bits_t value2_bit = field2.second.read_by_address(addr2_bit, memory);
     }
 };
 
