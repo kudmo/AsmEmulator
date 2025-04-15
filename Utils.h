@@ -79,9 +79,18 @@ struct Word {
     explicit Word(const bits_t& bits) {
         if (bits.size() != Size)
             throw std::invalid_argument("Word size must be equal to the size of vector");
-        std::copy(bits.begin(), bits.end(), bits.begin());
+        std::copy(bits.begin(), bits.end(), this->bits.begin());
     }
-
+    /**
+     * @brief Constructs a Word from a vector of booleans.
+     * @param bits Source bits vector.
+     * @throws std::invalid_argument if bits.size() not equal to Size
+     */
+    explicit Word(bits_t&& bits) {
+        if (bits.size() != Size)
+            throw std::invalid_argument("Word size must be equal to the size of vector");
+        std::copy(bits.begin(), bits.end(), this->bits.begin());
+    }
     /**
      * @brief Constructs a Word from an iterator range.
      * @param begin Start iterator of the bit sequence.

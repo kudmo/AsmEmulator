@@ -10,11 +10,11 @@
 /**
  * @brief Concept defining basic memory interface requirements.
  *
- * A type satisfies BasicMemory if it provides:
- * - `word_type`: Type representing a memory word
- * - `address_type`: Type used for memory addressing
- * - `read()`: Const method to read words from memory
- * - `write()`: Method to write words to memory
+ * A type \c T satisfies BasicMemory if it provides:
+ * - \c word_type: Type representing a memory word
+ * - \c address_type: Type used for memory addressing
+ * - \c read(): Const method to read words from memory
+ * - \c write(): Method to write words to memory
  *
  * @tparam T Type to check against memory concept
  */
@@ -38,9 +38,6 @@ concept BasicMemory =
  * @tparam Capacity Number of addressable words in memory
  *
  * Implements BasicMemory concept using vector storage. Provides:
- * - Fixed capacity determined at compile-time
- * - Runtime bounds checking on access
- * - Default-initialized memory contents
  *
  * @note Addresses are 0-based. Maximum valid address is Capacity-1
  */
@@ -80,11 +77,11 @@ struct Memory {
 /**
  * @brief Concept extending BasicMemory with register operations
  *
- * A type satisfies MemoryWithRegisters if it:
- * - Satisfies BasicMemory requirements
+ * A type \cT satisfies MemoryWithRegisters if it:
+ * - Satisfies \c BasicMemory requirements
  * - Provides register-specific access methods:
- *   - get_register(): Read from register space
- *   - write_register(): Write to register space
+ *   - \c get_register(): Read from register space
+ *   - \c write_register(): Write to register space
  *
  * @tparam T Type to check against register memory concept
  */
@@ -140,6 +137,76 @@ struct AdvancedMemory : Memory<WordSize, Capacity> {
     void write_register(address_type reg, const word_type& word) {
         if (reg >= RegisterCapacity) throw std::out_of_range("Register write overflow");
         registers[reg] = word;
+    }
+};
+
+/**
+ * @brief Concept for systems with instruction pointer support
+ *
+ * A type satisfies MemoryWithInstructionPointer if it:
+ * - Provides instruction pointer management methods
+ *   - \c get_instruction_pointer():
+ *   - \c increment_instruction_pointer():
+ *   - \c increment_instruction_pointer(offset):
+ */
+template <typename T>
+concept InstructionPointerSystem =
+    requires(const T& mem) {
+    { mem.get_instruction_pointer() } -> std::same_as<size_t>;
+    } &&
+    requires(T& mem, size_t addr) {
+    { mem.set_instruction_pointer(addr) };
+    } &&
+    requires(T& mem, size_t offset) {
+    { mem.increment_instruction_pointer(offset) };
+    };
+
+/**
+ * @brief Memory system with integrated instruction pointer management
+ *
+ * @tparam WordSize         Bit width of memory words (must be > 0)
+ * @tparam Capacity         Total number of addressable words in main memory
+ * @tparam RegisterCapacity Number of general-purpose registers
+ */
+template <size_t WordSize, size_t Capacity, size_t RegisterCapacity>
+class ComputerMemory : public AdvancedMemory<WordSize, Capacity, RegisterCapacity> {
+private:
+    size_t instruction_pointer = 0;
+
+public:
+    /// @brief Word type for memory operations
+    using word_type = typename AdvancedMemory<WordSize, Capacity, RegisterCapacity>::word_type;
+
+    /// @brief Address type for memory access
+    using address_type = typename AdvancedMemory<WordSize, Capacity, RegisterCapacity>::address_type;
+
+    /**
+     * @brief Get current instruction pointer value
+     * @return Current position in instruction stream
+     */
+    size_t get_instruction_pointer() const noexcept {
+        return instruction_pointer;
+    }
+
+    /**
+     * @brief Set instruction pointer to absolute position
+     * @param value New instruction pointer value
+     *
+     * @throws std::out_of_range if value >= Capacity
+     */
+    void set_instruction_pointer(size_t value) {
+        if (value >= Capacity) {
+            throw std::out_of_range("Instruction pointer exceeds memory capacity");
+        }
+        instruction_pointer = value;
+    }
+
+    /**
+     * @brief Advance instruction pointer with wrap-around
+     * @param value Number of positions to advance (default 1)
+     */
+    void increment_instruction_pointer(size_t value = 1) noexcept {
+        instruction_pointer = (instruction_pointer + value) % Capacity;
     }
 };
 

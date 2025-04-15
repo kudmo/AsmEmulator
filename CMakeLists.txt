@@ -7,4 +7,5 @@ add_executable(AsmEmulator main.cpp
         Addressing.h
         Memory.h
         Instruction.h
-        Utils.h)
+        Utils.h
+        Emulator.h)

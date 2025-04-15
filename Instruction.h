@@ -181,9 +181,11 @@ class TwoAddressInstruction : public Instruction<CodeVal, CodeSize, Args...>
 
 public:
     template <BasicMemory MemType>
-    static void execute(const Word<Base::total_size>& word, MemType& memory) {
-        auto addr1_bit = Base::template extract_field<0>(word);
-        auto addr2_bit = Base::template extract_field<1>(word);
+    static void execute(const bits_t& word, MemType& memory) {
+        Word<Base::total_size> word_bit(word);
+
+        auto addr1_bit = Base::template extract_field<0>(word_bit);
+        auto addr2_bit = Base::template extract_field<1>(word_bit);
 
         bits_t value1_bit = field1.second.read_by_address(addr1_bit, memory);
         bits_t value2_bit = field2.second.read_by_address(addr2_bit, memory);
